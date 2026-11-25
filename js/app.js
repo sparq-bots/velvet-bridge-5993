@@ -123,7 +123,9 @@ function wireUi() {
   $('licPop').addEventListener('click', e => {
     if (e.target === $('licPop') || e.target.closest('.lic-close')) hideLicence();
     const b = e.target.closest('.share-file');
-    if (b) (b.dataset.mode === 'audio' ? saveBookAudio(b) : shareBible(b));
+    if (b) saveBookAudio(b);
+    const sh = e.target.closest('.share-btn');
+    if (sh) (S.tr.audioOnly ? shareLink() : shareBible(sh));
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('licPop').hidden) hideLicence(); });
   $('prev').onclick = () => step(-1);
@@ -135,6 +137,10 @@ function wireUi() {
     if (e.key === 'ArrowRight') step(rtl ? -1 : 1, { turn: true });
   });
   wireSwipe();
+  const dock = document.querySelector('.bottom');
+  const setDock = () => document.documentElement.style.setProperty('--dock-h', dock.offsetHeight + 'px');
+  if ('ResizeObserver' in window) new ResizeObserver(setDock).observe(dock);
+  setDock();
 }
 
 // Swipe to turn the page, in the direction the language reads: in a
@@ -418,7 +424,7 @@ async function warmCache() {
 // share sheet opens (Bluetooth, Nearby Share, messaging apps, Save to Files);
 // elsewhere it downloads.
 async function shareBible(btn) {
-  const label = btn.textContent;
+  const label = btn.innerHTML;
   btn.disabled = true; btn.textContent = '…';
   try {
     const volumes = {};
@@ -438,9 +444,17 @@ async function shareBible(btn) {
     btn.textContent = '⚠';
     return;
   } finally {
-    if (btn.textContent === '…') btn.textContent = label;
+    if (btn.textContent === '…') btn.innerHTML = label;
     btn.disabled = false;
   }
+}
+
+const SHARE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>';
+
+// Audio-only languages have no text file to share: share this page's link.
+async function shareLink() {
+  try { if (navigator.share) return await navigator.share({ url: location.href }); } catch (e) { if (e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(location.href); } catch { /* nothing more to try */ }
 }
 
 // --- licence pop-up ---------------------------------------------------------
@@ -453,7 +467,8 @@ function showLicence() {
     + (S.tr.copyright ? `<p>${esc(S.tr.copyright)}</p>` : '')
     + `<p><a href="${esc(S.tr.license)}" rel="noreferrer noopener" target="_blank">${esc(S.tr.source || 'eBible.org')} ↗</a></p>`)
     + (a ? `<p class="audio-credit">♪ <strong>${esc(a.rec.t)}</strong>${a.rec.cr ? '<br>' + esc(a.rec.cr) : ''}</p>` : '')
-    + (bookAudioUrls().length || !S.tr.audioOnly ? `<p class="share-row"><button type="button" class="share-file" data-mode="${bookAudioUrls().length ? 'audio' : 'file'}">⤓ ${esc(T('share'))}</button></p>` : '');
+    + `<p class="share-row">${bookAudioUrls().length ? `<button type="button" class="share-file" data-mode="audio" title="${esc(T('saveAudio'))}">⤓ ${esc(T('share'))}</button>` : ''}`
+    + `<button type="button" class="share-btn" aria-label="${esc(T('shareIt'))}" title="${esc(T('shareIt'))}">${SHARE_ICON}</button></p>`;
   $('licPop').hidden = false;
   updateSaveAudio();
   $('licPop').querySelector('.lic-close').focus();
@@ -845,26 +860,21 @@ function bookAudioUrls(book = S.book) {
 async function updateSaveAudio() {
   const btn = $('licPop').querySelector('.share-file[data-mode="audio"]');
   if (!btn || !('caches' in window)) return;
-  const urls = bookAudioUrls();
-  btn.title = T('saveAudio');
   if (S.audioSaving === S.book) return;             // progress shown while saving
+  const urls = bookAudioUrls();
   const c = await caches.open(AUDIO_CACHE);
   const saved = (await Promise.all(urls.map(u => c.match(u)))).every(Boolean);
-  btn.classList.toggle('saved', saved);
-  btn.textContent = saved ? `✓ ${T('savedAudio')}` : `⤓ ${T('share')}`;
+  btn.textContent = `${saved ? '✓' : '⤓'} ${T('share')}`;
   btn.dataset.state = saved ? 'saved' : 'save';
 }
 
 async function saveBookAudio(btn) {
   const book = S.book, urls = bookAudioUrls(book);
   if (!urls.length || !('caches' in window)) return;
+  if (S.audioSaving) return;
   const c = await caches.open(AUDIO_CACHE);
-  if (btn.dataset.state === 'saved') {             // tap again: free the space
-    await Promise.all(urls.map(u => c.delete(u)));
-    return updateSaveAudio();
-  }
   navigator.storage?.persist?.().catch(() => {});
-  S.audioSaving = book; btn.disabled = true; btn.classList.remove('saved');
+  S.audioSaving = book; btn.disabled = true;
   let done = 0;
   const live = () => $('licPop').querySelector('.share-file[data-mode="audio"]');
   const show = () => { const b = live(); if (b && S.book === book) b.textContent = `⤓ ${N(done)} / ${N(urls.length)}`; };

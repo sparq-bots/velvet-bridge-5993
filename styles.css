@@ -156,8 +156,6 @@ main { touch-action: pan-y pinch-zoom; }
 .share-file:hover { background: #333; }
 .share-file:disabled { background: #666; border-color: #666; cursor: wait; }
 
-/* Save button showing saved book audio. */
-.share-file.saved { background: #fff; color: #1f6b2f; border-color: #b9d9c0; }
 
 /* Tap a word: original Greek/Hebrew pop-up. Tagged words look like normal text. */
 main .w { cursor: pointer; border-radius: 0; }
@@ -171,3 +169,18 @@ main .w.on { background: #dbe3f6; box-shadow: 0 0 0 .1em #dbe3f6; }
 .word-box .wd-from { font-size: .85rem; }
 .wd-ref { border: 0; background: none; padding: 0; color: #1f3f8f; text-decoration: underline; cursor: pointer; font: inherit; }
 .word-box .wd-cred { margin-top: .8rem; padding-top: .5rem; border-top: 1px solid #eee; font-size: .72rem; }
+
+/* Pop-up: square share button right of the black Save button. */
+.pop-box .share-row { gap: .35rem; align-items: center; }
+.share-btn { width: 1.75rem; height: 1.75rem; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: #fff; color: #111; border: 1px solid #111; border-radius: 3px; cursor: pointer; flex: none; }
+.share-btn:hover { background: #f0f0f0; }
+.share-btn:disabled { cursor: wait; }
+.share-btn svg { width: .95rem; height: .95rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.share-file { height: 1.75rem; box-sizing: border-box; }
+
+/* Bible text a little smaller. */
+main { font-size: 16px; }
+
+/* The chapter ends just above the bottom bar (its height is measured live). */
+main, body.with-player main { padding-bottom: calc(var(--dock-h, 3.7rem) + .5rem); }
+main > :last-child { margin-bottom: 0; }
