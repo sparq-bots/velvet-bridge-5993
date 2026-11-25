@@ -389,12 +389,20 @@ function updateNavButtons() {
   $('next').disabled = i === list.length - 1;
 }
 
+// General (macro)language codes that bots and other sites use → the codes in this library.
+const LANG_ALIAS = { ara: ['arb'], fas: ['pes'], per: ['pes'], prs: ['pes'], pus: ['pbu', 'pst'], zho: ['cmn'], chi: ['cmn'], msa: ['zsm', 'zlm'], may: ['zsm', 'zlm'],
+  swa: ['swh', 'swc'], uzb: ['uzn'], aze: ['azj', 'azb'], est: ['ekk'], nor: ['nob', 'nno'], orm: ['gaz', 'hae'], mon: ['khk'], nep: ['npi'],
+  grn: ['gug'], lav: ['lvs'], sqi: ['als'], alb: ['als'], kon: ['kng', 'ldi'], que: ['quh', 'quz', 'qub'], kur: ['kmr', 'ckb'], ful: ['fuf', 'fuv', 'ffm'],
+  aka: ['twi'], mlg: ['plt'], ori: ['ory'], fil: ['tgl'] };
+
 function parseHash() {
   const [, tr, book, ch] = location.hash.split('/');
   if (!tr || !S.catalog) return {};
   const lang = Object.values(S.catalog.languages).find(l => l.translations.some(t => t.id === tr))
     || Object.values(S.catalog.languages).find(l => l.dropped?.includes(tr))       // old link to a translation no longer shown
-    || S.catalog.languages[tr];                                                       // language code (chatbot links: #/spa/GEN/1)
+    || S.catalog.languages[tr]                                                        // language code (chatbot links: #/spa/GEN/1)
+    || (LANG_ALIAS[tr] || []).map(c => S.catalog.languages[c]).find(Boolean)            // general code: ara → arb, fas → pes…
+    || Object.values(S.catalog.languages).find(l => l.bcp === tr);                       // two-letter code: es, ar…
   return lang ? { lang: lang.code, tr: lang.translations.some(t => t.id === tr) ? tr : lang.translations[0].id, book, ch: Number(ch) || 1 } : {};
 }
 async function onHash() {
