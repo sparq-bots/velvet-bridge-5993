@@ -1,0 +1,151 @@
+/* Deliberately plain: system fonts only, no external requests, nothing that
+   stands out on a screen at a glance. */
+:root { color-scheme: light; --fg:#1d1d1d; --muted:#6b6b6b; --bg:#ffffff; --line:#e3e3df; --accent:#3d5a80; }
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin:0; background:var(--bg); color:var(--fg); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif; }
+button, select, input, .btn { font: inherit; color: inherit; background: #fff; border: 1px solid var(--line); border-radius: 3px; padding: .3em .55em; }
+.btn { display: inline-flex; align-items: center; gap: .3rem; text-decoration: none; cursor: pointer; }
+/* Every control in the top bar is exactly the same height. */
+.bar button, .bar select, .bar .btn, .dock button, .dock select { box-sizing: border-box; height: 2.5rem; min-height: 2.5rem; padding-top: 0; padding-bottom: 0; line-height: 1; vertical-align: middle; }
+.bar button, .bar .btn, .dock button { display: inline-flex; align-items: center; justify-content: center; }
+#prev, #next { min-width: 2.5rem; }
+.btn svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tools { display: flex; gap: .35rem; align-items: center; }
+[hidden] { display: none !important; }
+main:focus { outline: none; }
+button { cursor: pointer; }
+button:disabled { opacity: .4; cursor: default; }
+
+.bar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; padding: .55rem .8rem; background: var(--bg); border-bottom: 1px solid var(--line); }
+.lang { position: relative; }
+#langBtn { min-width: 7rem; justify-content: flex-start; }
+.panel { position: absolute; top: 2.6rem; inset-inline-start: 0; width: min(22rem, 92vw); background: #fff; border: 1px solid var(--line); border-radius: 3px; box-shadow: 0 6px 24px rgba(0,0,0,.12); padding: .5rem; }
+.panel input { width: 100%; }
+.panel ul { list-style: none; margin: .4rem 0 0; padding: 0; max-height: 60vh; overflow: auto; }
+.panel li { padding: .35rem .5rem; border-radius: 2px; cursor: pointer; display: flex; justify-content: space-between; gap: .75rem; }
+.panel li[aria-selected="true"], .panel li:hover { background: var(--line); }
+.panel li small { color: var(--muted); white-space: nowrap; }
+
+main { max-width: 42rem; margin: 0 auto; padding: 1.2rem 1.1rem 3rem; outline: none; }
+main h1 { font-size: 1.35rem; font-weight: 600; margin: .2rem 0 1rem; }
+main h2 { font-size: 1rem; font-weight: 600; margin: 1.6rem 0 .4rem; color: var(--muted); }
+main p { margin: 0 0 .9rem; }
+main p.q1, main p.q, main p.q2, main p.q3 { margin: 0 0 .15rem; padding-inline-start: 1.5rem; }
+main p.q2, main p.q3 { padding-inline-start: 2.75rem; }
+main p.m, main p.nb { text-indent: 0; }
+sup.v { font-size: .62em; color: var(--muted); margin-inline-end: .2em; font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: .82rem; }
+.notice { border: 1px solid var(--line); border-radius: 3px; padding: .8rem 1rem; }
+.notice ul { margin: .5rem 0 0; padding-inline-start: 1.2rem; }
+.notice a, .foot a { color: var(--accent); }
+.badge { font-size: .75rem; color: var(--muted); border: 1px solid var(--line); border-radius: 2px; padding: 0 .3em; margin-inline-start: .4em; }
+option.missing { color: var(--muted); }
+
+
+main { padding-bottom: 4rem; }
+
+/* Top bar: language and translation on the left, audio in the right corner. */
+.tools { margin-inline-start: auto; flex: none; }
+#listen { color: var(--accent); width: 2.5rem; padding: 0; }
+#trSel { max-width: 22rem; text-overflow: ellipsis; }
+
+/* Book and chapter controls: centred at the bottom of the screen. */
+.bottom {
+  position: fixed; z-index: 2; left: 0; right: 0; bottom: 0;
+  padding: .5rem .8rem calc(.5rem + env(safe-area-inset-bottom));
+  background: var(--bg); border-top: 1px solid var(--line);
+}
+.dock { display: flex; align-items: center; justify-content: center; gap: .35rem; }
+.player { max-width: 40rem; margin: 0 auto .45rem; }
+.player audio { display: block; width: 100%; height: 2.5rem; }
+body.with-player main { padding-bottom: calc(9.5rem + env(safe-area-inset-bottom)); }
+#listen[aria-pressed="true"] { background-color: #d9d9d9; border-color: #bdbdbd; }
+.pop-box .audio-credit { margin-top: .7rem; }
+.dock #bookSel { width: 12rem; max-width: 50vw; }
+main { padding-bottom: calc(6rem + env(safe-area-inset-bottom)); }
+@media (max-width: 560px) {
+  .bar { flex-wrap: nowrap; }
+  #trSel { flex: 1 1 0; min-width: 0; max-width: none; }
+  .lang { flex: none; }
+  #langBtn { min-width: 0; max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dock #bookSel { flex: 1 1 0; min-width: 0; width: auto; max-width: none; }
+  .dock #chSel { flex: none; }
+}
+
+
+/* Licence: a small ⓘ right after the chapter's last word; tap for a pop-up. */
+main .lic-btn { display: inline; border: 0; background: none; padding: 0 .1rem; margin-inline-start: .15rem; font-size: .8em; line-height: 1; color: var(--muted); cursor: pointer; vertical-align: .1em; }
+main .lic-btn:hover { color: var(--fg); }
+.pop { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(0, 0, 0, .25); }
+.pop-box { position: relative; width: min(24rem, 100%); background: #fff; border: 1px solid var(--line); border-radius: 3px; padding: 1.1rem 2.6rem 1rem 1.1rem; box-shadow: 0 10px 30px rgba(0, 0, 0, .15); font-size: .9rem; line-height: 1.5; }
+.pop-box p { margin: .45rem 0 0; color: var(--muted); }
+.pop-box a { color: var(--accent); }
+.lic-close { position: absolute; top: .45rem; right: .45rem; width: 2rem; height: 2rem; border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 1rem; }
+
+/* Buttons and menus: light grey with near-black text and icons. */
+.bar button, .bar select, .bar .btn, .dock button, .dock select {
+  background-color: #ececec; border-color: #d6d6d6; color: #111;
+}
+.bar button:hover, .bar select:hover, .bar .btn:hover, .dock button:hover, .dock select:hover { background-color: #e2e2e2; }
+#listen { color: #111; }
+.btn svg { stroke-width: 2; }
+
+/* Sizing: smaller button text (smallest for language and translation);
+   top-bar controls a little shorter than the bottom bar's. */
+.bar button, .bar select, .bar .btn, .dock button, .dock select { font-size: .9rem; }
+#langBtn, #trSel { font-size: .82rem; }
+.bar button, .bar select, .bar .btn { height: 2.15rem; min-height: 2.15rem; }
+.bar #listen { width: 2.15rem; }
+.bar { padding-top: .45rem; padding-bottom: .45rem; }
+
+/* Top bar: translation (if any) on the left; language then audio on the right. */
+.tools .lang { flex: none; }
+.tools .panel { inset-inline-start: auto; inset-inline-end: 0; }
+#langBtn { min-width: 9.5rem; max-width: 15rem; font-size: .76rem; justify-content: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Language list: the selected language sits on a black bar. */
+.panel li.current, .panel li.current:hover { background: #111; color: #fff; }
+.panel li.current small, .panel li.current .badge { color: #d0d0d0; border-color: #555; }
+
+/* Follow-along: the verse being read. */
+.vs { border-radius: 2px; transition: background-color .25s; }
+.vs.hl { background: #cfe2ff; box-shadow: 0 0 0 .12em #cfe2ff; }
+
+/* Page turn when moving by swipe or arrow keys. */
+@keyframes turn-r { from { transform: translateX(42px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes turn-l { from { transform: translateX(-42px); opacity: 0; } to { transform: none; opacity: 1; } }
+main.turn-r { animation: turn-r .22s ease-out; }
+main.turn-l { animation: turn-l .22s ease-out; }
+main { touch-action: pan-y pinch-zoom; }
+@media (prefers-reduced-motion: reduce) { main.turn-r, main.turn-l { animation: none; } }
+
+@media (max-width: 560px) {
+  #langBtn { min-width: 0; width: 38vw; max-width: 38vw; }
+  .tools .panel { position: fixed; top: 3rem; left: .5rem; right: .5rem; width: auto; }
+}
+
+/* Language button: a square icon button like the audio button. */
+#langBtn.icon, .bar #langBtn.icon { width: 2.15rem; min-width: 0; max-width: none; padding: 0; justify-content: center; }
+@media (max-width: 560px) { #langBtn.icon { width: 2.15rem; max-width: none; } }
+#langBtn.icon svg { width: 1.15rem; height: 1.15rem; fill: none; stroke: #111; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Top-bar icon buttons: a bit smaller and closer together. */
+.bar .tools { gap: .2rem; }
+.bar #listen, .bar #langBtn.icon, #langBtn.icon { width: 1.9rem; height: 1.9rem; min-height: 0; }
+.bar #listen svg, #langBtn.icon svg { width: 1rem; height: 1rem; }
+@media (max-width: 560px) { #langBtn.icon { width: 1.9rem; } }
+
+/* Top bar colour: royal blue, white icons. */
+.bar { background: #1f3f8f; border-bottom-color: #1f3f8f; }
+.bar .btn, .bar #langBtn.icon { background: #3554a3; border-color: #4763b0; color: #fff; }
+.bar .btn svg, .bar #listen svg { color: #fff; stroke: #fff; }
+.bar #langBtn.icon svg { stroke: #fff; }
+.bar .btn:hover, .bar #langBtn.icon:hover { background: #4462b4; }
+.bar #listen[aria-pressed="true"] { background: #5672c0; border-color: #6a84cb; }
+
+/* Follow-along highlight: yellow, square corners. */
+.vs { border-radius: 0; }
+.vs.hl { background: #fff1a6; box-shadow: 0 0 0 .12em #fff1a6; border-radius: 0; }

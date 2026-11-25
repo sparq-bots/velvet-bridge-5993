@@ -1,0 +1,10 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+/livelist.json
+  Cache-Control: no-cache
+/health.json
+  Cache-Control: no-cache
+/content/*
+  Cache-Control: no-cache
