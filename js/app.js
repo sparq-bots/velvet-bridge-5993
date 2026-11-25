@@ -222,7 +222,9 @@ async function selectTranslation(id, pos = {}) {
   S.nu = numberingFor(S.tr.books.map(b => b.name).join(' ') + ' ' + (S.tr.title || '') + ' ' + S.lang.name, S.lang.code);
   if (S.tr.audioOnly) {
     $('bookSel').innerHTML = S.tr.books.map(b => `<option value="${b.code}">${esc(b.name)}</option>`).join('');
-    const b = S.tr.books.find(x => x.code === pos.book) ? pos.book : S.tr.books[0].code;
+    // Missing book: start at the first one of the same testament (NT link on an NT-only recording, etc.).
+    const b = S.tr.books.find(x => x.code === pos.book) ? pos.book
+      : (NT.includes(pos.book) && S.tr.books.find(x => NT.includes(x.code))?.code) || S.tr.books[0].code;
     showPlayer(true, { autoplay: false });
     return go(b, pos.ch || 1, { replace: true });
   }
@@ -375,7 +377,8 @@ function parseHash() {
   const [, tr, book, ch] = location.hash.split('/');
   if (!tr || !S.catalog) return {};
   const lang = Object.values(S.catalog.languages).find(l => l.translations.some(t => t.id === tr))
-    || Object.values(S.catalog.languages).find(l => l.dropped?.includes(tr));      // old link to a translation no longer shown
+    || Object.values(S.catalog.languages).find(l => l.dropped?.includes(tr))       // old link to a translation no longer shown
+    || S.catalog.languages[tr];                                                       // language code (chatbot links: #/spa/GEN/1)
   return lang ? { lang: lang.code, tr: lang.translations.some(t => t.id === tr) ? tr : lang.translations[0].id, book, ch: Number(ch) || 1 } : {};
 }
 async function onHash() {

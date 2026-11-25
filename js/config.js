@@ -1,17 +1,12 @@
 export default {
  "title": "Reader",
  "networkId": "bmn-1",
- "build": "202611250534-7b1a40",
+ "build": "202611251650-a7b2a0",
  "trustedKeys": [
   "t9py7e2EuZjKglF5Snild5RPhL+HTST+T1TKK999PEY=",
   "/+BFrxOI+MIBVseb0usSTsgB2W/8JBJhLW8dEFekRFs="
  ],
  "backupMirrors": [
-  "https://basil-pages-5897.pages.dev/",
-  "https://amber-notes-5052.pages.dev/",
-  "https://river-atlas-7851.pages.dev/",
-  "https://linen-chapter-8145.pages.dev/",
-  "https://quiet-harbor-6263.pages.dev/",
   "https://summit-compass-9575.pages.dev/",
   "https://granite-quill-6750.pages.dev/",
   "https://quiet-quill-3571.pages.dev/",
@@ -36,7 +31,12 @@ export default {
   "https://sparq-bots.github.io/velvet-atlas-3148/",
   "https://autumn-archive-3376.vercel.app/",
   "https://linen-notes-5334.vercel.app/",
-  "https://pine-field-9605.vercel.app/"
+  "https://pine-field-9605.vercel.app/",
+  "https://pine-studio-8578.surge.sh/",
+  "https://summit-compass-2958.surge.sh/",
+  "https://ember-garden-6318.surge.sh/",
+  "https://misty-folio-2772.surge.sh/",
+  "https://stone-quill-5379.surge.sh/"
  ],
  "related": {
   "prs": [
