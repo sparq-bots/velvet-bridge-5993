@@ -149,3 +149,8 @@ main { touch-action: pan-y pinch-zoom; }
 /* Follow-along highlight: yellow, square corners. */
 .vs { border-radius: 0; }
 .vs.hl { background: #fff1a6; box-shadow: 0 0 0 .12em #fff1a6; border-radius: 0; }
+
+/* "Save a copy to share" in the licence pop-up: quiet, out of the way. */
+.share-row { margin-top: 1rem; border-top: 1px solid #eee; padding-top: .7rem; }
+.share-file { background: none; border: 0; padding: 0; color: #1f3f8f; font: inherit; font-size: .85rem; cursor: pointer; text-decoration: underline; }
+.share-file:disabled { color: #888; cursor: wait; }

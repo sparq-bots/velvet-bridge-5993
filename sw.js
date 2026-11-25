@@ -1,8 +1,8 @@
 // Service worker: keeps the app shell and every chapter volume the reader has
 // opened, so the site still works after this mirror goes down.
 // BUILD and SHELL are filled in by scripts/build-site.js.
-const BUILD = '202611250349-4f7128';
-const SHELL = ["./","index.html","styles.css","content/catalog.json?v=202611250349-4f7128","js/app.js","js/book-orders.js","js/book-tradition.js","js/canon.js","js/config.js","js/follow.js","js/gunzip.js","js/i18n.js","js/numerals.js","js/verify.js","vendor/ed25519.js","vendor/fflate.js"];
+const BUILD = '202611250502-797987';
+const SHELL = ["./","index.html","styles.css","content/catalog.json?v=202611250502-797987","js/app.js","js/book-orders.js","js/book-tradition.js","js/canon.js","js/config.js","js/follow.js","js/gunzip.js","js/i18n.js","js/numerals.js","js/share-file.js","js/verify.js","vendor/ed25519.js","vendor/fflate.js"];
 const SHELL_CACHE = 'shell-' + BUILD;
 const CONTENT_CACHE = 'content-v1';   // survives app updates
 
@@ -14,6 +14,28 @@ self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
     .then(keys => Promise.all(keys.filter(k => k.startsWith('shell-') && k !== SHELL_CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
+});
+
+// The reader asks for its whole current Bible to be kept (every volume, the
+// catalog and the index), so it works offline after one visit, even if this
+// mirror is blocked later. Runs in the worker, so it works on the first visit.
+self.addEventListener('message', e => {
+  if (e.data?.type !== 'save' || !Array.isArray(e.data.urls)) return;
+  e.waitUntil((async () => {
+    const shell = await caches.open(SHELL_CACHE), content = await caches.open(CONTENT_CACHE);
+    for (const u of e.data.urls) {
+      const url = new URL(u, self.registration.scope);
+      if (url.origin !== location.origin) continue;
+      const dat = url.pathname.endsWith('.dat');
+      const c = dat ? content : shell;
+      if (await c.match(url.href, { ignoreSearch: !dat })) continue;
+      try {
+        const res = await fetch(url.href);
+        if (res.ok && !(res.headers.get('content-type') || '').includes('text/html')) await c.put(url.href, res);
+      } catch { /* offline right now: try again next visit */ }
+    }
+    e.source?.postMessage({ type: 'saved', n: e.data.urls.length });
+  })());
 });
 
 self.addEventListener('fetch', e => {

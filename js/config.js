@@ -1,7 +1,7 @@
 export default {
  "title": "Reader",
  "networkId": "bmn-1",
- "build": "202611250349-4f7128",
+ "build": "202611250502-797987",
  "trustedKeys": [
   "t9py7e2EuZjKglF5Snild5RPhL+HTST+T1TKK999PEY=",
   "/+BFrxOI+MIBVseb0usSTsgB2W/8JBJhLW8dEFekRFs="
@@ -26,6 +26,14 @@ export default {
   "https://violet-notes-2586.pages.dev/",
   "https://ember-journal-2406.pages.dev/",
   "https://autumn-journal-8798.pages.dev/",
+  "https://sparq-bots.github.io/meadow-folio-5017/",
+  "https://sparq-bots.github.io/canyon-paper-4650/",
+  "https://sparq-bots.github.io/autumn-chapter-2275/",
+  "https://sparq-bots.github.io/tidal-bridge-4544/",
+  "https://sparq-bots.github.io/velvet-bridge-5993/",
+  "https://sparq-bots.github.io/river-quill-2481/",
+  "https://sparq-bots.github.io/cedar-letters-9759/",
+  "https://sparq-bots.github.io/velvet-atlas-3148/",
   "https://autumn-archive-3376.vercel.app/",
   "https://linen-notes-5334.vercel.app/",
   "https://pine-field-9605.vercel.app/"

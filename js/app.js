@@ -8,6 +8,7 @@ import { USFX } from './book-orders.js';
 import { uiFor, t as tr_ } from './i18n.js';
 import { numberingFor, formatNumber, localDigits } from './numerals.js';
 import { Follower } from './follow.js';
+import { buildBibleHtml } from './share-file.js';
 import { decodeVolume } from './gunzip.js';
 
 const $ = id => document.getElementById(id);
@@ -31,9 +32,6 @@ init().catch(err => { $('text').innerHTML = `<p class="notice">⚠ ${esc(err.mes
 async function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
-    // On a first visit the page loads before the worker controls it, so
-    // re-request what's already open once it does; that puts it in the cache.
-    navigator.serviceWorker.ready.then(() => setTimeout(warmCache, 500)).catch(() => {});
   }
   if (CONFIG.title) document.title = CONFIG.title;
 
@@ -112,7 +110,11 @@ function wireUi() {
   $('bookSel').onchange = e => go(e.target.value, 1);
   $('chSel').onchange = e => go(S.book, Number(e.target.value));
   $('text').addEventListener('click', e => { if (e.target.closest('.lic-btn')) showLicence(); });
-  $('licPop').addEventListener('click', e => { if (e.target === $('licPop') || e.target.closest('.lic-close')) hideLicence(); });
+  $('licPop').addEventListener('click', e => {
+    if (e.target === $('licPop') || e.target.closest('.lic-close')) hideLicence();
+    const b = e.target.closest('.share-file');
+    if (b) shareBible(b);
+  });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('licPop').hidden) hideLicence(); });
   $('prev').onclick = () => step(-1);
   $('next').onclick = () => step(1);
@@ -216,6 +218,7 @@ async function selectTranslation(id, pos = {}) {
   S.tr.books = orderBooks([...byCode.keys()], trad, ORDER).map(c => byCode.get(c));
   S.order = orderBooks(hasDc ? [...new Set([...OT, ...NT, ...byCode.keys()])] : [...OT, ...NT], trad, ORDER);
   if (S.tr.audioOnly) await nameAudioBooks();
+  setTimeout(warmCache, 1500);          // save this Bible for offline use
   S.nu = numberingFor(S.tr.books.map(b => b.name).join(' ') + ' ' + (S.tr.title || '') + ' ' + S.lang.name, S.lang.code);
   if (S.tr.audioOnly) {
     $('bookSel').innerHTML = S.tr.books.map(b => `<option value="${b.code}">${esc(b.name)}</option>`).join('');
@@ -384,13 +387,47 @@ async function onHash() {
 
 // --- offline --------------------------------------------------------------
 
+// Keep the whole current Bible on this device (a few MB), not only the books
+// already opened, so it keeps working offline and when every mirror is blocked.
 async function warmCache() {
-  if (!navigator.serviceWorker.controller || !S.tr || S.tr.audioOnly) return;
-  const urls = ['content/catalog.json' + V, `content/${S.tr.id}/index.json` + V,
-    ...[...S.vols.keys()].map(k => { const [id, vol] = k.split('/'); return id === S.tr.id ? `content/${id}/${S.tr.files[vol]}` : null; }).filter(Boolean)];
-  for (const u of urls) fetch(u).catch(() => {});
+  if (!('serviceWorker' in navigator) || !S.tr || S.tr.audioOnly) return;
+  const urls = ['./', 'content/catalog.json' + V, `content/${S.tr.id}/index.json` + V,
+    ...Object.values(S.tr.files || {}).map(f => `content/${S.tr.id}/${f}`)];
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    (navigator.serviceWorker.controller || reg.active)?.postMessage({ type: 'save', urls });
+  } catch { /* no service worker: nothing to keep */ }
 }
 
+// --- a copy to pass on -------------------------------------------------------
+// The whole Bible as one plain HTML file (see share-file.js). On phones the
+// share sheet opens (Bluetooth, Nearby Share, messaging apps, Save to Files);
+// elsewhere it downloads.
+async function shareBible(btn) {
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const volumes = {};
+    for (const vol of Object.keys(S.tr.files || {})) Object.assign(volumes, await loadVolume(S.tr.id, vol));
+    const html = buildBibleHtml({ tr: S.tr, lang: S.lang, volumes, num: N, digits: v => localDigits(v, S.nu) });
+    const name = `${S.lang.code}-${S.tr.id}.html`;
+    const file = new File([html], name, { type: 'text/html' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ files: [file] }); return; }
+      catch (e) { if (e.name === 'AbortError') return; }
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = name;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60e3);
+  } catch {
+    btn.textContent = '⚠';
+    return;
+  } finally {
+    if (btn.textContent === '…') btn.textContent = label;
+    btn.disabled = false;
+  }
+}
 
 // --- licence pop-up ---------------------------------------------------------
 
@@ -401,7 +438,8 @@ function showLicence() {
   $('licBody').innerHTML = arc + (S.tr.audioOnly ? '' : `<strong>${esc(S.tr.title)}</strong>`
     + (S.tr.copyright ? `<p>${esc(S.tr.copyright)}</p>` : '')
     + `<p><a href="${esc(S.tr.license)}" rel="noreferrer noopener" target="_blank">${esc(S.tr.source || 'eBible.org')} ↗</a></p>`)
-    + (a ? `<p class="audio-credit">♪ <strong>${esc(a.rec.t)}</strong>${a.rec.cr ? '<br>' + esc(a.rec.cr) : ''}</p>` : '');
+    + (a ? `<p class="audio-credit">♪ <strong>${esc(a.rec.t)}</strong>${a.rec.cr ? '<br>' + esc(a.rec.cr) : ''}</p>` : '')
+    + (S.tr.audioOnly ? '' : `<p class="share-row"><button type="button" class="share-file">⤓ ${esc(T('share'))}</button></p>`);
   $('licPop').hidden = false;
   $('licPop').querySelector('.lic-close').focus();
 }
