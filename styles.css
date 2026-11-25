@@ -150,7 +150,8 @@ main { touch-action: pan-y pinch-zoom; }
 .vs { border-radius: 0; }
 .vs.hl { background: #fff1a6; box-shadow: 0 0 0 .12em #fff1a6; border-radius: 0; }
 
-/* "Save a copy to share" in the licence pop-up: quiet, out of the way. */
-.share-row { margin-top: 1rem; border-top: 1px solid #eee; padding-top: .7rem; }
-.share-file { background: none; border: 0; padding: 0; color: #1f3f8f; font: inherit; font-size: .85rem; cursor: pointer; text-decoration: underline; }
-.share-file:disabled { color: #888; cursor: wait; }
+/* Save button in the licence pop-up: black rectangle, on the right. */
+.pop-box .share-row { margin-top: .9rem; margin-inline-end: -1.5rem; border-top: 1px solid #eee; padding-top: .7rem; display: flex; justify-content: flex-end; }
+.share-file { background: #111; color: #fff; border: 1px solid #111; border-radius: 3px; padding: .2rem .55rem; font: inherit; font-size: .74rem; line-height: 1.4; cursor: pointer; display: inline-flex; align-items: center; gap: .25rem; }
+.share-file:hover { background: #333; }
+.share-file:disabled { background: #666; border-color: #666; cursor: wait; }
