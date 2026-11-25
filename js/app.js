@@ -109,7 +109,17 @@ function wireUi() {
   $('trSel').onchange = e => selectTranslation(e.target.value, { book: S.book, ch: S.ch });
   $('bookSel').onchange = e => go(e.target.value, 1);
   $('chSel').onchange = e => go(S.book, Number(e.target.value));
-  $('text').addEventListener('click', e => { if (e.target.closest('.lic-btn')) showLicence(); });
+  $('text').addEventListener('click', e => {
+    if (e.target.closest('.lic-btn')) return showLicence();
+    const w = e.target.closest('.w');
+    if (w) showWord(w.dataset.s, w.textContent, w);
+  });
+  $('wordPop').addEventListener('click', e => {
+    if (e.target === $('wordPop') || e.target.closest('.lic-close')) return hideWord();
+    const ref = e.target.closest('.wd-ref');
+    if (ref) showWord(ref.dataset.s);
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('wordPop').hidden) hideWord(); });
   $('licPop').addEventListener('click', e => {
     if (e.target === $('licPop') || e.target.closest('.lic-close')) hideLicence();
     const b = e.target.closest('.share-file');
@@ -315,7 +325,7 @@ function renderChapter(meta, items) {
     else if (it.p) openP(it.p);
     else if (it.v) {
       if (!open) openP('p');
-      html += `<span class="vs" data-v="${esc(it.v)}">` + (it.c ? '' : `<sup class="v">${esc(localDigits(it.v, S.nu))}</sup>`) + esc(it.t) + '</span> ';
+      html += `<span class="vs" data-v="${esc(it.v)}">` + (it.c ? '' : `<sup class="v">${esc(localDigits(it.v, S.nu))}</sup>`) + (it.s ? taggedHtml(it.t, it.s) : esc(it.t)) + '</span> ';
     }
   }
   // Small ⓘ right after the chapter's last word; tapping it opens the licence
@@ -395,7 +405,8 @@ async function onHash() {
 async function warmCache() {
   if (!('serviceWorker' in navigator) || !S.tr || S.tr.audioOnly) return;
   const urls = ['./', 'content/catalog.json' + V, `content/${S.tr.id}/index.json` + V,
-    ...Object.values(S.tr.files || {}).map(f => `content/${S.tr.id}/${f}`)];
+    ...Object.values(S.tr.files || {}).map(f => `content/${S.tr.id}/${f}`),
+    ...(S.tr.strong ? ['content/lexicon/G.json' + V, 'content/lexicon/H.json' + V] : [])];
   try {
     const reg = await navigator.serviceWorker.ready;
     (navigator.serviceWorker.controller || reg.active)?.postMessage({ type: 'save', urls });
@@ -651,6 +662,7 @@ function applyUi() {
   $('langSearch').placeholder = T('search'); $('langSearch').setAttribute('aria-label', T('search'));
   $('langPanel').dir = /^(ar|fa|ur|ps)$/.test(S.ui) ? 'rtl' : 'ltr';
   $('licPop').querySelector('.lic-close').setAttribute('aria-label', T('close'));
+  $('wordPop').querySelector('.lic-close').setAttribute('aria-label', T('close'));
   $('licPop').querySelector('.pop-box').setAttribute('aria-label', T('license'));
 }
 
@@ -743,6 +755,59 @@ function followAlong() {
 function clearHighlight() {
   $('text').querySelectorAll('.vs.hl').forEach(el => el.classList.remove('hl'));
   if (S.hl) S.hl.i = -1;
+}
+
+// --- tap a word: the original Greek or Hebrew word behind it ---------------
+// For translations whose words carry Strong's numbers (the World English
+// Bible). Dictionaries: Strong's Greek (CC0, Ulrik Sandborg-Petersen) and
+// Strong's Hebrew (Open Scriptures, CC BY 4.0). Loaded on first tap, then
+// kept on the device with the rest of the Bible.
+
+function taggedHtml(t, tags) {
+  let out = '', at = 0;
+  for (const [a, b, code] of tags) {
+    if (a < at || b > t.length) continue;
+    out += esc(t.slice(at, a)) + `<span class="w" data-s="${esc(code)}">${esc(t.slice(a, b))}</span>`;
+    at = b;
+  }
+  return out + esc(t.slice(at));
+}
+
+const lexicons = {};
+function lexicon(kind) {
+  lexicons[kind] ||= fetchJson(`content/lexicon/${kind}.json` + V).catch(e => { delete lexicons[kind]; throw e; });
+  return lexicons[kind];
+}
+
+async function showWord(code, tapped, el) {
+  if (!/^[GH]\d+$/.test(code || '')) return;
+  const pop = $('wordPop'), body = $('wordBody');
+  $('text').querySelectorAll('.w.on').forEach(x => x.classList.remove('on'));
+  el?.classList.add('on');
+  if (tapped != null) pop.dataset.tapped = tapped;
+  pop.hidden = false;
+  body.innerHTML = '<p class="muted">…</p>';
+  let e;
+  try { e = (await lexicon(code[0]))[code]; } catch { body.innerHTML = '<p class="muted">⚠</p>'; return; }
+  if (!e) { body.innerHTML = `<p class="muted">${esc(code)}</p>`; return; }
+  const [word, translit, pron, meaning, usage, from] = e;
+  const heb = code[0] === 'H';
+  const refs = s => esc(s).replace(/\b([GH])(\d+)\b/g, (m) => `<button type="button" class="wd-ref" data-s="${m}">${m}</button>`);
+  body.innerHTML =
+    (pop.dataset.tapped ? `<p class="wd-tapped">“${esc(pop.dataset.tapped)}”</p>` : '')
+    + `<p class="wd-orig" lang="${heb ? 'hbo' : 'grc'}" dir="${heb ? 'rtl' : 'ltr'}">${esc(word)}</p>`
+    + `<p class="wd-say">${esc(translit)}${pron ? ` · <span>${esc(pron)}</span>` : ''}</p>`
+    + (meaning ? `<p class="wd-def">${esc(meaning)}</p>` : '')
+    + (usage ? `<p class="wd-use"><span>KJV:</span> ${esc(usage)}</p>` : '')
+    + (from ? `<p class="wd-from">${refs(from)}</p>` : '')
+    + `<p class="wd-cred">Strong's ${esc(code)} · ${heb ? 'Hebrew: Open Scriptures, CC BY 4.0' : 'Greek: public domain (CC0)'}</p>`;
+  pop.querySelector('.lic-close').focus({ preventScroll: true });
+}
+
+function hideWord() {
+  $('wordPop').hidden = true;
+  delete $('wordPop').dataset.tapped;
+  $('text').querySelector('.w.on')?.classList.remove('on');
 }
 
 // --- save a book's audio for offline listening ----------------------------
