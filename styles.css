@@ -155,3 +155,26 @@ main { touch-action: pan-y pinch-zoom; }
 .share-file { background: #111; color: #fff; border: 1px solid #111; border-radius: 3px; padding: .2rem .55rem; font: inherit; font-size: .74rem; line-height: 1.4; cursor: pointer; display: inline-flex; align-items: center; gap: .25rem; }
 .share-file:hover { background: #333; }
 .share-file:disabled { background: #666; border-color: #666; cursor: wait; }
+
+/* Search: magnifier in the top bar opens a panel under it. */
+.bar #findBtn { width: 1.9rem; height: 1.9rem; min-height: 0; padding: 0; justify-content: center; }
+.bar #findBtn svg { width: 1rem; height: 1rem; }
+.bar #findBtn[aria-expanded="true"] { background: #5672c0; border-color: #6a84cb; }
+.find { position: fixed; z-index: 3; left: 0; right: 0; top: var(--bar-h, 2.9rem); bottom: 0; background: #fff; overflow: auto; padding: .7rem .8rem 2rem; border-top: 1px solid var(--line); }
+.find input { display: block; width: 100%; max-width: 40rem; margin: 0 auto; font-size: 1rem; padding: .45rem .6rem; }
+.find-meta { max-width: 40rem; margin: .5rem auto 0; color: var(--muted); font-size: .8rem; min-height: 1em; }
+.find ul { list-style: none; max-width: 40rem; margin: .3rem auto 0; padding: 0; }
+.find li { padding: .55rem .2rem; border-bottom: 1px solid #eee; cursor: pointer; line-height: 1.5; }
+.find li:hover, .find li:focus { background: #f4f6fb; outline: none; }
+.find li .ref { display: block; font-size: .78rem; font-weight: 600; color: #1f3f8f; }
+.find mark { background: #fff1a6; color: inherit; }
+.vs.found { background: #fff1a6; transition: background 1.5s ease 1.2s; }
+.vs.found.fade { background: transparent; }
+
+/* Save a book's audio: small button under the player, on the right. */
+.aud-save-row { display: flex; justify-content: flex-end; margin: .3rem 0 0; }
+.aud-save { background: #111; color: #fff; border: 1px solid #111; border-radius: 3px; padding: .15rem .5rem; font-size: .72rem; line-height: 1.4; cursor: pointer; }
+.aud-save:hover { background: #333; }
+.aud-save.saved { background: #fff; color: #1f6b2f; border-color: #b9d9c0; }
+.aud-save:disabled { background: #666; border-color: #666; cursor: progress; }
+body.with-player main { padding-bottom: calc(11rem + env(safe-area-inset-bottom)); }

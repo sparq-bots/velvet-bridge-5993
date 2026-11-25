@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="theme-color" content="#1f3f8f">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://audio.dbs.org https://arc.dbs.org; media-src 'self' https://audio.dbs.org; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://audio.dbs.org https://arc.dbs.org; media-src 'self' blob: https://audio.dbs.org; font-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex">
 <title>Reader</title>
@@ -16,6 +16,9 @@
 <header class="bar">
   <select id="trSel" aria-label="Translation" hidden></select>
   <div class="tools">
+    <button id="findBtn" class="btn" type="button" hidden aria-label="Search" aria-expanded="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg>
+    </button>
     <div class="lang">
       <button id="langBtn" class="btn icon" type="button" aria-haspopup="listbox" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7"/><path d="M9 3v2c0 4.418-2.239 8-5 8"/><path d="M5 9c0 2.144 2.952 3.908 6.7 4"/><path d="M12 20l4-9 4 9"/><path d="M19.1 18h-6.2"/></svg></button>
       <div id="langPanel" class="panel" hidden>
@@ -29,10 +32,16 @@
   </div>
 </header>
 
+<div id="findPanel" class="find" hidden>
+  <input id="findInput" type="search" autocomplete="off" spellcheck="false" aria-label="Search">
+  <p id="findMeta" class="find-meta" aria-live="polite"></p>
+  <ul id="findList"></ul>
+</div>
+
 <main id="text" tabindex="-1"><p class="muted">…</p></main>
 
 <div class="bottom">
-  <div id="player" class="player" hidden><audio id="aud" controls preload="none"></audio></div>
+  <div id="player" class="player" hidden><audio id="aud" controls preload="none"></audio><p class="aud-save-row"><button id="saveAudio" class="aud-save" type="button" hidden></button></p></div>
   <nav class="nav dock" aria-label="Book and chapter">
     <button id="prev" type="button" aria-label="Previous">‹</button>
     <select id="bookSel" aria-label="Book"></select>

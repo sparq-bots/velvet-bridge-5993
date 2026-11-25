@@ -7,6 +7,7 @@ import { traditionFor, orderBooks } from './book-tradition.js';
 import { USFX } from './book-orders.js';
 import { uiFor, t as tr_ } from './i18n.js';
 import { numberingFor, formatNumber, localDigits } from './numerals.js';
+import { search, parseRef, highlight } from './search.js';
 import { Follower } from './follow.js';
 import { buildBibleHtml } from './share-file.js';
 import { decodeVolume } from './gunzip.js';
@@ -125,6 +126,8 @@ function wireUi() {
     if (e.key === 'ArrowRight') step(rtl ? -1 : 1, { turn: true });
   });
   wireSwipe();
+  wireSearch();
+  $('saveAudio').onclick = saveBookAudio;
 }
 
 // Swipe to turn the page, in the direction the language reads: in a
@@ -245,6 +248,7 @@ async function selectTranslation(id, pos = {}) {
 async function go(book, ch, { replace = false, turn = 0 } = {}) {
   S.book = book; S.ch = Number(ch) || 1;
   S.hl = null;
+  $('findBtn').hidden = !!S.tr.audioOnly;
   $('text').dataset.ch = '';
   const hash = `#/${S.tr.id}/${book}/${S.ch}`;
   if (location.hash !== hash) (replace ? history.replaceState(null, '', hash) : history.pushState(null, '', hash));
@@ -580,6 +584,7 @@ function fcbhLink() {
 }
 
 function updateListen() {
+  setTimeout(updateSaveAudio, 0);
   const a = $('listen'), aud = $('aud');
   const dbs = dbsAudio();
   if (dbs) {
@@ -590,8 +595,7 @@ function updateListen() {
     a.setAttribute('aria-pressed', String(!$('player').hidden));
     if (!$('player').hidden && aud.dataset.src !== dbs.url) {
       const resume = S.keepPlaying || !aud.paused;
-      aud.src = dbs.url; aud.dataset.src = dbs.url;
-      if (resume) aud.play().catch(() => {});
+      setAudioSrc(dbs.url).then(() => { if (resume) aud.play().catch(() => {}); });
     }
     return;
   }
@@ -612,8 +616,9 @@ function showPlayer(show, { autoplay = true } = {}) {
   $('listen').setAttribute('aria-pressed', String(show));
   if (!show) { aud.pause(); S.keepPlaying = false; clearHighlight(); return; }
   const dbs = dbsAudio();
-  if (dbs && aud.dataset.src !== dbs.url) { aud.src = dbs.url; aud.dataset.src = dbs.url; }
-  if (autoplay && dbs) aud.play().catch(() => {});
+  const ready = dbs && aud.dataset.src !== dbs.url ? setAudioSrc(dbs.url) : Promise.resolve();
+  ready.then(() => { if (autoplay && dbs) aud.play().catch(() => {}); });
+  updateSaveAudio();
 }
 
 function wireAudio() {
@@ -645,7 +650,8 @@ function applyUi() {
   const label = (id, key) => { const el = $(id); if (el) { el.setAttribute('aria-label', T(key)); el.title = T(key); } };
   label('langBtn', 'language'); label('trSel', 'translation');
   if ($('langBtn').dataset.name) { const n = `${T('language')}: ${$('langBtn').dataset.name}`; $('langBtn').setAttribute('aria-label', n); $('langBtn').title = n; } label('prev', 'prev'); label('next', 'next');
-  label('bookSel', 'book'); label('chSel', 'chapter');
+  label('bookSel', 'book'); label('chSel', 'chapter'); label('findBtn', 'find');
+  $('findInput').placeholder = T('find'); $('findInput').setAttribute('aria-label', T('find'));
   $('listen').setAttribute('aria-label', T('listen'));
   $('langSearch').placeholder = T('search'); $('langSearch').setAttribute('aria-label', T('search'));
   $('langPanel').dir = /^(ar|fa|ur|ps)$/.test(S.ui) ? 'rtl' : 'ltr';
@@ -742,6 +748,147 @@ function followAlong() {
 function clearHighlight() {
   $('text').querySelectorAll('.vs.hl').forEach(el => el.classList.remove('hl'));
   if (S.hl) S.hl.i = -1;
+}
+
+// --- search (offline: reads the Bible already saved on this device) --------
+
+function wireSearch() {
+  const btn = $('findBtn'), panel = $('findPanel'), input = $('findInput');
+  let timer = 0;
+  btn.onclick = () => openSearch(panel.hidden);
+  input.oninput = () => { clearTimeout(timer); timer = setTimeout(runSearch, 300); };
+  input.onkeydown = e => {
+    if (e.key === 'Escape') openSearch(false);
+    if (e.key === 'Enter') { clearTimeout(timer); runSearch(); }
+  };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !panel.hidden) openSearch(false); });
+  $('findList').onclick = e => { const li = e.target.closest('li'); if (li) openHit(li.dataset); };
+  $('findList').onkeydown = e => { if (e.key === 'Enter') { const li = e.target.closest('li'); if (li) openHit(li.dataset); } };
+}
+
+function openSearch(show) {
+  const panel = $('findPanel');
+  panel.hidden = !show;
+  $('findBtn').setAttribute('aria-expanded', String(show));
+  if (!show) { S.findRun = (S.findRun || 0) + 1; return; }
+  panel.style.top = document.querySelector('.bar').getBoundingClientRect().bottom + 'px';
+  panel.dir = S.tr?.dir || 'ltr';
+  $('findInput').focus(); $('findInput').select();
+}
+
+async function* allChapters() {
+  for (const b of S.tr.books) {
+    if (b.vol == null) continue;
+    const vol = await loadVolume(S.tr.id, b.vol);
+    for (const ch of b.chapters) yield { book: b.code, ch, items: vol[b.code]?.[String(ch)] || [] };
+  }
+}
+
+async function runSearch() {
+  const q = $('findInput').value.trim(), list = $('findList'), meta = $('findMeta');
+  const run = S.findRun = (S.findRun || 0) + 1;
+  list.innerHTML = ''; meta.textContent = '';
+  if (!q || S.tr?.audioOnly) return;
+  const name = c => S.tr.books.find(b => b.code === c)?.name || c;
+  const item = (h, html) => `<li tabindex="0" data-book="${esc(h.book)}" data-ch="${h.ch}" data-v="${esc(h.v ?? '')}"><span class="ref">${esc(name(h.book))} ${N(h.ch)}${h.v ? ':' + esc(localDigits(String(h.v), S.nu)) : ''}</span>${html}</li>`;
+  // A reference like "John 3:16" jumps straight there.
+  const ref = parseRef(q, S.tr.books);
+  if (ref) list.insertAdjacentHTML('beforeend', item(ref, ''));
+  meta.textContent = '…';
+  let shown = 0, buf = '';
+  const flush = () => { if (run === S.findRun && buf) { list.insertAdjacentHTML('beforeend', buf); buf = ''; } };
+  try {
+    const { hits, more } = await search(q, allChapters(), {
+      onHit: h => { buf += item(h, highlight(h.t, q, esc)); if (++shown % 20 === 0) flush(); },
+    });
+    if (run !== S.findRun) return;
+    flush();
+    meta.textContent = hits.length ? N(hits.length) + (more ? '+' : '') : (ref ? '' : T('noHits'));
+  } catch {
+    if (run === S.findRun) meta.textContent = '⚠';
+  }
+}
+
+async function openHit({ book, ch, v }) {
+  openSearch(false);
+  await go(book, Number(ch));
+  if (!v) return;
+  const el = $('text').querySelector(`.vs[data-v="${CSS.escape(v)}"]`);
+  if (!el) return;
+  el.classList.add('found');
+  el.scrollIntoView({ block: 'center' });
+  requestAnimationFrame(() => setTimeout(() => el.classList.add('fade'), 50));
+}
+
+// --- save a book's audio for offline listening ----------------------------
+// Downloads every chapter's recording of the current book into the browser's
+// storage; the service worker plays them from there when offline. Runs in the
+// page (not the worker) so a long book isn't cut off; tap again to resume.
+
+const AUDIO_CACHE = 'audio-v1';
+
+// Point the player at a chapter: the copy saved on this device if there is
+// one (works offline, seeks instantly), otherwise DBS's stream.
+// dataset.src always holds the DBS address, so the rest of the code can tell
+// which chapter is loaded.
+async function setAudioSrc(url) {
+  const aud = $('aud');
+  aud.dataset.src = url;
+  let src = url;
+  try {
+    const hit = 'caches' in window && await (await caches.open(AUDIO_CACHE)).match(url);
+    if (hit) src = URL.createObjectURL(await hit.blob());
+  } catch { /* storage unavailable: stream */ }
+  if (aud.dataset.src !== url) { if (src !== url) URL.revokeObjectURL(src); return; }   // moved on meanwhile
+  if (aud.src.startsWith('blob:')) URL.revokeObjectURL(aud.src);
+  aud.src = src;
+}
+
+function bookAudioUrls(book = S.book) {
+  const meta = S.tr?.books.find(b => b.code === book);
+  if (!meta) return [];
+  return [...new Set(meta.chapters.map(c => dbsAudio(book, c)?.url).filter(Boolean))];
+}
+
+async function updateSaveAudio() {
+  const btn = $('saveAudio');
+  const urls = !$('player').hidden && 'caches' in window ? bookAudioUrls() : [];
+  if (!urls.length || !('serviceWorker' in navigator)) { btn.hidden = true; return; }
+  if (S.audioSaving === S.book) return;             // progress shown while saving
+  btn.hidden = false; btn.disabled = false;
+  const c = await caches.open(AUDIO_CACHE);
+  const have = (await Promise.all(urls.map(u => c.match(u)))).filter(Boolean).length;
+  const saved = have === urls.length;
+  btn.classList.toggle('saved', saved);
+  btn.textContent = saved ? `✓ ${T('savedAudio')}` : `⤓ ${T('saveAudio')}`;
+  btn.dataset.state = saved ? 'saved' : 'save';
+}
+
+async function saveBookAudio() {
+  const btn = $('saveAudio'), book = S.book, urls = bookAudioUrls(book);
+  if (!urls.length) return;
+  const c = await caches.open(AUDIO_CACHE);
+  if (btn.dataset.state === 'saved') {             // tap again: free the space
+    await Promise.all(urls.map(u => c.delete(u)));
+    return updateSaveAudio();
+  }
+  navigator.storage?.persist?.().catch(() => {});
+  S.audioSaving = book; btn.disabled = true; btn.classList.remove('saved');
+  let done = 0;
+  const show = () => { if (S.book === book) btn.textContent = `⤓ ${N(done)} / ${N(urls.length)}`; };
+  show();
+  for (const u of urls) {
+    try {
+      if (!(await c.match(u))) {
+        const res = await fetch(u, { mode: 'cors' });
+        if (res.ok && res.status === 200) await c.put(u, res);
+      }
+      done++;
+    } catch { /* offline or blocked: stop, keep what's saved */ break; }
+    show();
+  }
+  S.audioSaving = null;
+  updateSaveAudio();
 }
 
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
