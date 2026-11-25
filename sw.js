@@ -1,8 +1,8 @@
 // Service worker: keeps the app shell and every chapter volume the reader has
 // opened, so the site still works after this mirror goes down.
 // BUILD and SHELL are filled in by scripts/build-site.js.
-const BUILD = '202611251725-5394f4';
-const SHELL = ["./","index.html","styles.css","content/catalog.json?v=202611251725-5394f4","js/app.js","js/book-orders.js","js/book-tradition.js","js/canon.js","js/config.js","js/follow.js","js/gunzip.js","js/i18n.js","js/numerals.js","js/search.js","js/share-file.js","js/verify.js","vendor/ed25519.js","vendor/fflate.js"];
+const BUILD = '202611251745-4fcb30';
+const SHELL = ["./","index.html","styles.css","content/catalog.json?v=202611251745-4fcb30","js/app.js","js/book-orders.js","js/book-tradition.js","js/canon.js","js/config.js","js/follow.js","js/gunzip.js","js/i18n.js","js/numerals.js","js/share-file.js","js/verify.js","vendor/ed25519.js","vendor/fflate.js"];
 const SHELL_CACHE = 'shell-' + BUILD;
 const CONTENT_CACHE = 'content-v1';   // survives app updates
 
