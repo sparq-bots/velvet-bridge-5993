@@ -284,6 +284,7 @@ async function go(book, ch, { replace = false, turn = 0 } = {}) {
     main.innerHTML = text ? renderChapter(meta, text.items)
       : `<h1>${esc(meta.name)} ${N(S.ch)}</h1>${textLinkHtml()}<p class="muted">♪ <button type="button" class="lic-btn" aria-haspopup="dialog" aria-label="${esc(T('license'))}">ⓘ</button></p>`;
     main.dataset.ch = want;
+    markTitle();
     followAlong();
     return;
   }
@@ -305,6 +306,7 @@ async function go(book, ch, { replace = false, turn = 0 } = {}) {
     const vol = await loadVolume(S.tr.id, meta.vol);
     main.innerHTML = renderChapter(meta, vol[book][String(S.ch)] || []);
     main.dataset.ch = `${book}/${S.ch}`;
+    markTitle();
     followAlong();
   } catch {
     main.innerHTML = `<div class="notice">⚠</div>`;
@@ -652,6 +654,7 @@ function showPlayer(show, { autoplay = true } = {}) {
   const ready = dbs && aud.dataset.src !== dbs.url ? setAudioSrc(dbs.url) : Promise.resolve();
   ready.then(() => { if (autoplay && dbs) aud.play().catch(() => {}); });
   updateSaveAudio();
+  markTitle();
 }
 
 function wireAudio() {
@@ -774,6 +777,7 @@ function followAlong() {
   if (i === S.hl.i) return;
   const at = k => (k < 0 ? main.querySelector('h1') : S.hl.spans[k]);   // -1: the chapter title is being read
   at(S.hl.i)?.classList.remove('hl');
+  if (i >= 0) main.querySelector('h1')?.classList.remove('hl');
   const el = at(i);
   if (!el) return;
   el.classList.add('hl');
@@ -783,9 +787,18 @@ function followAlong() {
   const bottom = innerHeight - ($('player').closest('.bottom')?.offsetHeight || 0);
   if (!aud.paused && (r.top < 56 || r.bottom > bottom)) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
+// With audio on, the chapter title starts out highlighted (it is read first).
+function markTitle() {
+  const h = $('text').querySelector('h1');
+  if (!h) return;
+  const at = S.hl?.i ?? -2;
+  h.classList.toggle('hl', !!dbsAudio() && !$('player').hidden && at < 0);
+}
+
 function clearHighlight() {
   $('text').querySelectorAll('.hl').forEach(el => el.classList.remove('hl'));
   if (S.hl) S.hl.i = -2;
+  markTitle();
 }
 
 // --- tap a word: the original Greek or Hebrew word behind it ---------------
@@ -794,10 +807,16 @@ function clearHighlight() {
 // Strong's Hebrew (Open Scriptures, CC BY 4.0). Loaded on first tap, then
 // kept on the device with the rest of the Bible.
 
+// Small everyday words stay plain (no underline, no pop-up).
+const PLAIN_WORDS = new Set(('a an the and or but nor so yet for of to from in on at by with as into onto upon unto '
+  + 'be is am are was were been being it its this that these those there then than if not no '
+  + 'he him his she her they them their we us our you your i me my also up out off over').split(' '));
+
 function taggedHtml(t, tags) {
   let out = '', at = 0;
   for (const [a, b, code] of tags) {
     if (a < at || b > t.length) continue;
+    if (PLAIN_WORDS.has(t.slice(a, b).toLowerCase())) continue;
     out += esc(t.slice(at, a)) + `<span class="w" data-s="${esc(code)}">${esc(t.slice(a, b))}</span>`;
     at = b;
   }
