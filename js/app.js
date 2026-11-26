@@ -622,6 +622,9 @@ function updateListen() {
     a.removeAttribute('href'); a.removeAttribute('target');
     a.setAttribute('role', 'button'); a.dataset.mode = 'play';
     a.title = dbs.rec.t;
+    // Audio comes on by itself wherever there is audio, unless the listener
+    // switched it off with the headphones button (remembered on this device).
+    if ($('player').hidden && !store.get('audioOff', false)) return showPlayer(true);
     a.setAttribute('aria-pressed', String(!$('player').hidden));
     if (!$('player').hidden && aud.dataset.src !== dbs.url) {
       const resume = S.keepPlaying || !aud.paused;
@@ -655,7 +658,9 @@ function wireAudio() {
   $('listen').addEventListener('click', e => {
     if ($('listen').dataset.mode !== 'play') return;   // link mode: let it open Bible.is
     e.preventDefault();
-    showPlayer($('player').hidden);
+    const on = $('player').hidden;
+    store.set('audioOff', !on);
+    showPlayer(on);
   });
   const aud = $('aud');
   // Carry on to the next chapter when one finishes.
