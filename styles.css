@@ -149,7 +149,7 @@ main { touch-action: pan-y pinch-zoom; }
 
 /* Follow-along highlight: yellow, square corners. */
 .vs { border-radius: 0; }
-.vs.hl { background: #ffe57a; box-shadow: 0 0 0 .12em #ffe57a; border-radius: 0; }
+.vs.hl { background: #ffd84d; box-shadow: 0 0 0 .12em #ffd84d; border-radius: 0; }
 
 /* Save button in the licence pop-up: black rectangle, on the right. */
 .pop-box .share-row { margin-top: .9rem; margin-inline-end: -1.5rem; border-top: 1px solid #eee; padding-top: .7rem; display: flex; justify-content: flex-end; }
@@ -187,10 +187,12 @@ main, body.with-player main { padding-bottom: calc(var(--dock-h, 3.7rem) + .5rem
 main > :last-child { margin-bottom: 0; }
 
 /* The chapter title gets the follow-along highlight while it is read out. */
-main h1.hl { background: #ffe57a; box-shadow: 0 0 0 .15em #ffe57a; border-radius: 0; }
+main h1.hl { background: #ffd84d; box-shadow: 0 0 0 .15em #ffd84d; border-radius: 0; }
 
-/* Words with a Greek/Hebrew page: underlined. */
-main .w { text-decoration: underline; text-decoration-color: #8ba7bf; text-decoration-thickness: 1px; text-underline-offset: .2em; }
+/* Words with a Greek/Hebrew page: soft blue tint. */
+main .w { background: #edf3f8; border-radius: 3px; padding: 0 .12em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+/* The follow-along highlight wins over the tint while a verse is read. */
+.vs.hl .w { background: transparent; }
 
 /* Bottom bar: book button a little narrower, chapter button a little wider. */
 .dock #bookSel { width: 10rem; }
@@ -210,3 +212,6 @@ main .w { text-decoration: underline; text-decoration-color: #8ba7bf; text-decor
   .dock #bookSel { flex: none; width: 11.5rem; max-width: 48vw; }
   .dock #chSel { flex: none; min-width: 4.8rem; }
 }
+
+/* Pop-ups: rounded corners. */
+.pop-box { border-radius: 14px; }
