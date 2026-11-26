@@ -749,7 +749,8 @@ async function arcTitle(rec) {
 }
 
 // --- follow along -------------------------------------------------------------
-// While the audio plays, the verse being read gets a blue highlight. There are
+// While the audio plays, the verse being read gets a yellow highlight (the
+// chapter title first, while it is read out). There are
 // no timing files yet, so the position is estimated from how much text comes
 // before each verse (after a short spoken chapter title).
 
@@ -762,12 +763,14 @@ function followAlong() {
     const spans = [...main.querySelectorAll('.vs')];
     if (!spans.length) return;
     S.follow.reset(spans.length, spans.map(sp => sp.textContent.length));
-    S.hl = { spans, i: -1 };
+    S.hl = { spans, i: -2 };
   }
   const i = S.follow.current();
   if (i === S.hl.i) return;
-  S.hl.spans[S.hl.i]?.classList.remove('hl');
-  const el = S.hl.spans[i];
+  const at = k => (k < 0 ? main.querySelector('h1') : S.hl.spans[k]);   // -1: the chapter title is being read
+  at(S.hl.i)?.classList.remove('hl');
+  const el = at(i);
+  if (!el) return;
   el.classList.add('hl');
   S.hl.i = i;
   // Keep the highlighted verse on screen (above the bottom bar).
@@ -776,8 +779,8 @@ function followAlong() {
   if (!aud.paused && (r.top < 56 || r.bottom > bottom)) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 function clearHighlight() {
-  $('text').querySelectorAll('.vs.hl').forEach(el => el.classList.remove('hl'));
-  if (S.hl) S.hl.i = -1;
+  $('text').querySelectorAll('.hl').forEach(el => el.classList.remove('hl'));
+  if (S.hl) S.hl.i = -2;
 }
 
 // --- tap a word: the original Greek or Hebrew word behind it ---------------

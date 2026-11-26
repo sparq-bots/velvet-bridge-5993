@@ -105,8 +105,10 @@ export class Follower {
   // Index of the verse being read at the current time. While pauses can be
   // heard, the highlight waits for the pause before moving on (with some
   // slack in case a reader runs two verses together), so it doesn't jump ahead.
+  // Index of the verse being read; -1 while the chapter title is read.
   current() {
     const t = this.aud.currentTime;
+    if (t < this.start(0)) return -1;
     const hearing = this.timer && this.loud > 0;
     let i = 0;
     for (let j = 1; j < this.n; j++) {

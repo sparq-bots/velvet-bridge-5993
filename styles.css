@@ -29,7 +29,7 @@ button:disabled { opacity: .4; cursor: default; }
 .panel li small { color: var(--muted); white-space: nowrap; }
 
 main { max-width: 42rem; margin: 0 auto; padding: 1.2rem 1.1rem 3rem; outline: none; }
-main h1 { font-size: 1.35rem; font-weight: 600; margin: .2rem 0 1rem; }
+main h1 { font-size: 1.15rem; font-weight: 600; margin: .2rem 0 1rem; width: fit-content; }
 main h2 { font-size: 1rem; font-weight: 600; margin: 1.6rem 0 .4rem; color: var(--muted); }
 main p { margin: 0 0 .9rem; }
 main p.q1, main p.q, main p.q2, main p.q3 { margin: 0 0 .15rem; padding-inline-start: 1.5rem; }
@@ -139,12 +139,13 @@ main { touch-action: pan-y pinch-zoom; }
 @media (max-width: 560px) { #langBtn.icon { width: 1.9rem; } }
 
 /* Top bar colour: royal blue, white icons. */
-.bar { background: #1f3f8f; border-bottom-color: #1f3f8f; }
-.bar .btn, .bar #langBtn.icon { background: #3554a3; border-color: #4763b0; color: #fff; }
+/* Top bar: air force blue, with black buttons and white icons. */
+.bar { background: #5d8aa8; border-bottom-color: #5d8aa8; }
+.bar .btn, .bar #langBtn.icon { background: #111; border-color: #111; color: #fff; }
 .bar .btn svg, .bar #listen svg { color: #fff; stroke: #fff; }
 .bar #langBtn.icon svg { stroke: #fff; }
-.bar .btn:hover, .bar #langBtn.icon:hover { background: #4462b4; }
-.bar #listen[aria-pressed="true"] { background: #5672c0; border-color: #6a84cb; }
+.bar .btn:hover, .bar #langBtn.icon:hover { background: #333; }
+.bar #listen[aria-pressed="true"] { background: #000; border-color: #fff; }
 
 /* Follow-along highlight: yellow, square corners. */
 .vs { border-radius: 0; }
@@ -184,3 +185,9 @@ main { font-size: 16px; }
 /* The chapter ends just above the bottom bar (its height is measured live). */
 main, body.with-player main { padding-bottom: calc(var(--dock-h, 3.7rem) + .5rem); }
 main > :last-child { margin-bottom: 0; }
+
+/* The chapter title gets the follow-along highlight while it is read out. */
+main h1.hl { background: #fff1a6; box-shadow: 0 0 0 .15em #fff1a6; border-radius: 0; }
+
+/* Words with a Greek/Hebrew page: underlined. */
+main .w { text-decoration: underline; text-decoration-color: #8ba7bf; text-decoration-thickness: 1px; text-underline-offset: .2em; }
